@@ -7,9 +7,11 @@
 struct stLattice{
     unsigned char *buff0;
     unsigned char *buff1;
+    unsigned char *buffSum;
     int width;
     int height;
     int steps;
+    int threads;
 };
 typedef struct stLattice tpLattice;
 
@@ -19,12 +21,20 @@ void print2File(tpLattice *mLattice);
 int main(int ac, char**av)
 {
     tpLattice mLattice;
-    int flagSave = atoi(av[4]);
-    float prob   = atof(av[5]);
     //Inicializa variável
     mLattice.width  = atoi(av[1]);
     mLattice.height = atoi(av[2]);
     mLattice.steps  = atoi(av[3]);
+
+    int flagSave = atoi(av[4]);
+    float prob   = atof(av[5]);
+
+    mLattice.threads = -1;
+    if (ac > 6)
+      mLattice.threads = atoi(av[6]);
+
+    if (mLattice.threads == -1)
+      mLattice.threads = 8; // TODO get hardware cores
 
     fprintf(stdout, "\nGame of life");
     fprintf(stdout, "\nDominio(%d, %d, %d) Prob. %5.3f\n",   mLattice.width,   mLattice.height, mLattice.steps, prob);
@@ -33,6 +43,7 @@ int main(int ac, char**av)
 
     mLattice.buff0 = (unsigned char*) malloc (mLattice.width *   mLattice.height *  sizeof(unsigned char));
     mLattice.buff1 = (unsigned char*) malloc (mLattice.width *   mLattice.height *  sizeof(unsigned char));
+    mLattice.buffSum = (unsigned char*) malloc (mLattice.width *   mLattice.height *  sizeof(unsigned char));
     InitRandness(&mLattice, prob);
 
     for (int t = 0; t < mLattice.steps; t++)
@@ -57,6 +68,7 @@ int main(int ac, char**av)
 void InitRandness(tpLattice *mLattice, float p){
   memset(mLattice->buff0, 0x00,  mLattice->width *   mLattice->height *  sizeof(unsigned char));
   memset(mLattice->buff1, 0x00,  mLattice->width *   mLattice->height *  sizeof(unsigned char));
+  memset(mLattice->buffSum, 0x00,  mLattice->width *   mLattice->height *  sizeof(unsigned char));
   srand (42);
   for (int j = 1; j < mLattice->height - 1; j++){
       for (int i = 1; i < mLattice->width - 1; i++){
@@ -83,30 +95,42 @@ void GameOfLife(tpLattice *mLattice){
        ----|---|----
         sw | s | se
     */
+    #pragma omp parallel for num_threads(mLattice->threads)
     for (int j = 1; j < mLattice->height - 1; j++){
         for (int i = 1; i < mLattice->width - 1; i++){
-
           nw = mLattice->buff0[(j - 1) * mLattice->width  +  (i - 1)];
            n = mLattice->buff0[(j - 1) * mLattice->width  +  i];
           ne = mLattice->buff0[(j - 1) * mLattice->width  +  (i + 1)];
-          w  = mLattice->buff0[j * mLattice->width  +  (i - 1)];
-          c  = mLattice->buff0[j * mLattice->width  +  i];
-          e  = mLattice->buff0[j * mLattice->width  +  (i + 1)];
+
+          mLattice->buffSum[j * mLattice->width + i] = nw + n + ne;
+        }
+    }
+
+    #pragma omp parallel for num_threads(mLattice->threads)
+    for (int j = 1; j < mLattice->height - 1; j++){
+        for (int i = 1; i < mLattice->width - 1; i++){
           sw = mLattice->buff0[(j + 1) * mLattice->width  +  (i - 1)];
           s  = mLattice->buff0[(j + 1) * mLattice->width  +  i];
           se = mLattice->buff0[(j + 1) * mLattice->width  +  i+1];
 
-          sum = nw + n + ne + w + e + sw + s + se;
+          mLattice->buffSum[j * mLattice->width + i] += sw + s + se;
+        }
+    }
 
-              //mRule
-              if ((sum == 3) && (c == 0))
-                 mLattice->buff1[j  * mLattice->width  +  i] = 1;
-              else if ((sum >= 2) && (sum <= 3) && (c == 1))
-                 mLattice->buff1[j  * mLattice->width  +  i] = 1;
-              else
-                mLattice->buff1[j  * mLattice->width  +  i] = 0;
-        }//end-  for (int i = 0; i < mLattice->width; i++){
-    }//end-for (int j = 0; j < mLattice->height; j++){
+    #pragma omp parallel for num_threads(mLattice->threads)
+    for (int j = 1; j < mLattice->height - 1; j++){
+        for (int i = 1; i < mLattice->width - 1; i++){
+          w  = mLattice->buff0[j * mLattice->width  +  (i - 1)];
+          c  = mLattice->buff0[j * mLattice->width  +  i];
+          e  = mLattice->buff0[j * mLattice->width  +  (i + 1)];
+
+          sum = mLattice->buffSum[j * mLattice->width + i] + w + e;
+
+          mLattice->buff1[j * mLattice->width + i] =
+            ((sum == 3) && (c == 0)) |
+            ((sum >= 2) && (sum <= 3) && (c == 1));
+        }
+    }
 }
 
 /*
