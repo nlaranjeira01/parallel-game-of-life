@@ -118,9 +118,7 @@ void GameOfLife(tpLattice *mLattice){
 
           sum = nw + n + ne + w + e + sw + s + se;
 
-          mLattice->buff1[center + i] =
-            ((sum == 3) && (c == 0)) |
-            ((sum >= 2) && (sum <= 3) && (c == 1));
+          mLattice->buff1[center + i] = c == 1 && sum == 2 || sum == 3;
         }
     }
 }
