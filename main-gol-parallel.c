@@ -88,6 +88,7 @@ void InitRandness(tpLattice *mLattice, float p){
  */
 void GameOfLife(tpLattice *mLattice){
     int nw = -1, n = -1, ne = -1, w = -1, e = -1, sw = -1, s = -1, se = -1, c = -1, sum;
+    int left, right, up, down, center;
     /*
         nw | n | ne
        ----|---|----
@@ -95,38 +96,29 @@ void GameOfLife(tpLattice *mLattice){
        ----|---|----
         sw | s | se
     */
-    #pragma omp parallel for num_threads(mLattice->threads)
+    #pragma omp parallel for num_threads(mLattice->threads) private(up, down, center, left, right, nw, n, ne, w, c, sw, s, se, sum)
     for (int j = 1; j < mLattice->height - 1; j++){
+        up = (j - 1) * mLattice->width;
+        down = (j + 1) * mLattice->width;
+        center = j * mLattice->width;
+
         for (int i = 1; i < mLattice->width - 1; i++){
-          nw = mLattice->buff0[(j - 1) * mLattice->width  +  (i - 1)];
-           n = mLattice->buff0[(j - 1) * mLattice->width  +  i];
-          ne = mLattice->buff0[(j - 1) * mLattice->width  +  (i + 1)];
+          left = i-1;
+          right = i+1;
 
-          mLattice->buffSum[j * mLattice->width + i] = nw + n + ne;
-        }
-    }
+          nw = mLattice->buff0[up +  left];
+           n = mLattice->buff0[up +  i];
+          ne = mLattice->buff0[up +  right];
+          w  = mLattice->buff0[center +  left];
+          c  = mLattice->buff0[center  +  i];
+          e  = mLattice->buff0[center  +  right];
+          sw = mLattice->buff0[down +  left];
+          s  = mLattice->buff0[down +  i];
+          se = mLattice->buff0[down +  right];
 
-    #pragma omp parallel for num_threads(mLattice->threads)
-    for (int j = 1; j < mLattice->height - 1; j++){
-        for (int i = 1; i < mLattice->width - 1; i++){
-          sw = mLattice->buff0[(j + 1) * mLattice->width  +  (i - 1)];
-          s  = mLattice->buff0[(j + 1) * mLattice->width  +  i];
-          se = mLattice->buff0[(j + 1) * mLattice->width  +  i+1];
+          sum = nw + n + ne + w + e + sw + s + se;
 
-          mLattice->buffSum[j * mLattice->width + i] += sw + s + se;
-        }
-    }
-
-    #pragma omp parallel for num_threads(mLattice->threads)
-    for (int j = 1; j < mLattice->height - 1; j++){
-        for (int i = 1; i < mLattice->width - 1; i++){
-          w  = mLattice->buff0[j * mLattice->width  +  (i - 1)];
-          c  = mLattice->buff0[j * mLattice->width  +  i];
-          e  = mLattice->buff0[j * mLattice->width  +  (i + 1)];
-
-          sum = mLattice->buffSum[j * mLattice->width + i] + w + e;
-
-          mLattice->buff1[j * mLattice->width + i] =
+          mLattice->buff1[center + i] =
             ((sum == 3) && (c == 0)) |
             ((sum >= 2) && (sum <= 3) && (c == 1));
         }
