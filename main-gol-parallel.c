@@ -44,7 +44,6 @@ int main(int ac, char**av)
 
     mLattice.buff0 = (unsigned char*) malloc (mLattice.width *   mLattice.height *  sizeof(unsigned char));
     mLattice.buff1 = (unsigned char*) malloc (mLattice.width *   mLattice.height *  sizeof(unsigned char));
-    mLattice.buffSum = (unsigned char*) malloc (mLattice.width *   mLattice.height *  sizeof(unsigned char));
     InitRandness(&mLattice, prob);
 
     for (int t = 0; t < mLattice.steps; t++)
@@ -69,7 +68,6 @@ int main(int ac, char**av)
 void InitRandness(tpLattice *mLattice, float p){
   memset(mLattice->buff0, 0x00,  mLattice->width *   mLattice->height *  sizeof(unsigned char));
   memset(mLattice->buff1, 0x00,  mLattice->width *   mLattice->height *  sizeof(unsigned char));
-  memset(mLattice->buffSum, 0x00,  mLattice->width *   mLattice->height *  sizeof(unsigned char));
   srand (42);
   for (int j = 1; j < mLattice->height - 1; j++){
       for (int i = 1; i < mLattice->width - 1; i++){
