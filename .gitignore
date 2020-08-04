@@ -1,1 +1,4 @@
 gol
+*.txt
+*.swp
+gol-parallel
