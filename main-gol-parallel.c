@@ -3,6 +3,7 @@
 #include <time.h>
 #include <string.h>
 #include <assert.h>
+#include <omp.h>
 
 struct stLattice{
     unsigned char *buff0;
@@ -34,10 +35,10 @@ int main(int ac, char**av)
       mLattice.threads = atoi(av[6]);
 
     if (mLattice.threads == -1)
-      mLattice.threads = 8; // TODO get hardware cores
+      mLattice.threads = omp_get_num_procs();
 
     fprintf(stdout, "\nGame of life");
-    fprintf(stdout, "\nDominio(%d, %d, %d) Prob. %5.3f\n",   mLattice.width,   mLattice.height, mLattice.steps, prob);
+    fprintf(stdout, "\nDominio(%d, %d, %d) Prob. %5.3f Threads %d\n",   mLattice.width,   mLattice.height, mLattice.steps, prob, mLattice.threads);
 
     fflush(stdout);
 
