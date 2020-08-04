@@ -8,4 +8,4 @@
 #        |   |-----------> largura
 #        |---------------> altura
 
-time ./gol 64 64 1000 1 0.1
+time ./gol-parellel 128 128 1000 1 0.1

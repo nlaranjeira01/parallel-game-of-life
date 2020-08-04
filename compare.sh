@@ -4,8 +4,8 @@ args="128 128 1000 1 0.1"
 
 make
 
-./gol $args
-./gol-parallel $args
+time ./gol $args
+time ./gol-parallel $args
 
 echo
 
